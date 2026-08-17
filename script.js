@@ -1,6 +1,5 @@
 /* ============================================================
-   DS PREMIUM DETAIL — internal script
-   Sections: 1) scroll reveal  2) modals  3) booking wizard
+    DS PREMIUM DETAIL — internal script (cu Formspree integrat)
    ============================================================ */
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -93,8 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
     modalBackdrop.classList.remove('open');
     document.body.style.overflow = '';
   }
-  modalClose.addEventListener('click', closeModal);
-  modalBackdrop.addEventListener('click', (e) => { if (e.target === modalBackdrop) closeModal(); });
+  if(modalClose) modalClose.addEventListener('click', closeModal);
+  if(modalBackdrop) modalBackdrop.addEventListener('click', (e) => { if (e.target === modalBackdrop) closeModal(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
   // class cards → modal
@@ -147,9 +146,9 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ---------- 3) BOOKING WIZARD ---------- */
   const state = {
     class: null,
-    path: null,       // 'package' | 'individual'
-    package: null,     // if path === 'package'
-    services: [],      // if path === 'individual' → [{name, price}]
+    path: null,      // 'package' | 'individual'
+    package: null,    // if path === 'package'
+    services: [],     // if path === 'individual' → [{name, price}]
     dirtiness: null,
     date: null,
     time: null
@@ -165,22 +164,26 @@ document.addEventListener('DOMContentLoaded', () => {
       d.classList.toggle('active', dn === n);
       d.classList.toggle('done', dn < n);
     });
-    document.getElementById('booking-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const formEl = document.getElementById('booking-form');
+    if(formEl) formEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   document.querySelectorAll('.next-btn').forEach(btn => btn.addEventListener('click', () => goToStep(parseInt(btn.dataset.next, 10))));
   document.querySelectorAll('.prev-btn').forEach(btn => btn.addEventListener('click', () => goToStep(parseInt(btn.dataset.prev, 10))));
 
   // --- step 1: class ---
   const classOptions = document.getElementById('class-options');
-  classOptions.querySelectorAll('.choice-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      classOptions.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      state.class = btn.dataset.value;
-      document.querySelector('[data-next="2"]').disabled = false;
-      updatePackagePrices();
+  if(classOptions) {
+    classOptions.querySelectorAll('.choice-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        classOptions.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        state.class = btn.dataset.value;
+        const nextBtn = document.querySelector('[data-next="2"]');
+        if(nextBtn) nextBtn.disabled = false;
+        updatePackagePrices();
+      });
     });
-  });
+  }
 
   // --- step 2: dual path ---
   const pathPackageBtn = document.getElementById('path-package');
@@ -193,168 +196,229 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function selectPath(path){
     state.path = path;
-    pathPackageBtn.classList.toggle('selected', path === 'package');
-    pathIndividualBtn.classList.toggle('selected', path === 'individual');
-    selectionPackage.classList.toggle('active', path === 'package');
-    selectionIndividual.classList.toggle('active', path === 'individual');
-    dirtinessField.style.display = path === 'individual' ? 'block' : 'none';
+    if(pathPackageBtn) pathPackageBtn.classList.toggle('selected', path === 'package');
+    if(pathIndividualBtn) pathIndividualBtn.classList.toggle('selected', path === 'individual');
+    if(selectionPackage) selectionPackage.classList.toggle('active', path === 'package');
+    if(selectionIndividual) selectionIndividual.classList.toggle('active', path === 'individual');
+    if(dirtinessField) dirtinessField.style.display = path === 'individual' ? 'block' : 'none';
     if (path !== 'individual') {
       state.dirtiness = null;
-      dirtinessLevel.value = '';
+      if(dirtinessLevel) dirtinessLevel.value = '';
     }
-    // reset step-2 completion state until a concrete choice is made
-    nextStep3Btn.disabled = true;
+    if(nextStep3Btn) nextStep3Btn.disabled = true;
     state.package = null;
     state.services = [];
   }
-  dirtinessLevel.addEventListener('change', () => {
-    state.dirtiness = dirtinessLevel.value;
-  });
-  pathPackageBtn.addEventListener('click', () => selectPath('package'));
-  pathIndividualBtn.addEventListener('click', () => selectPath('individual'));
+  if(dirtinessLevel) {
+    dirtinessLevel.addEventListener('change', () => {
+      state.dirtiness = dirtinessLevel.value;
+    });
+  }
+  if(pathPackageBtn) pathPackageBtn.addEventListener('click', () => selectPath('package'));
+  if(pathIndividualBtn) pathIndividualBtn.addEventListener('click', () => selectPath('individual'));
 
   // package sub-choice
   const packageOptions = document.getElementById('package-options');
   function updatePackagePrices(){
+    if(!packageOptions) return;
     packageOptions.querySelectorAll('.price-tag').forEach(tag => {
-      const prices = JSON.parse(tag.dataset.prices);
-      const p = prices[state.class] ?? prices['M'];
-      tag.textContent = p + ' RON';
+      try {
+        const prices = JSON.parse(tag.dataset.prices);
+        const p = prices[state.class] ?? prices['M'];
+        tag.textContent = p + ' RON';
+      } catch(e) {}
     });
   }
 
-  document.querySelector('.hero-secondary').addEventListener('click', (event) => {
-    event.preventDefault();
-    document.getElementById('servicii').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-  packageOptions.querySelectorAll('.choice-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      packageOptions.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      state.package = btn.dataset.value;
-      nextStep3Btn.disabled = false;
+  const heroSecondary = document.querySelector('.hero-secondary');
+  if(heroSecondary) {
+    heroSecondary.addEventListener('click', (event) => {
+      event.preventDefault();
+      const s = document.getElementById('servicii');
+      if(s) s.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
-  });
+  }
+
+  if(packageOptions) {
+    packageOptions.querySelectorAll('.choice-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        packageOptions.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        state.package = btn.dataset.value;
+        if(nextStep3Btn) nextStep3Btn.disabled = false;
+      });
+    });
+  }
 
   // individual services sub-choice
   const serviceOptions = document.getElementById('service-options');
   const runningTotalEl = document.getElementById('running-total-value');
-  serviceOptions.querySelectorAll('.service-item').forEach(item => {
-    item.addEventListener('click', () => {
-      item.classList.toggle('selected');
-      const name = item.querySelector('span:nth-child(2)').textContent;
-      const price = parseInt(item.dataset.price, 10);
-      if (item.classList.contains('selected')) {
-        state.services.push({ name, price });
-      } else {
-        state.services = state.services.filter(s => s.name !== name);
-      }
-      const total = state.services.reduce((sum, s) => sum + s.price, 0);
-      runningTotalEl.textContent = total + ' RON';
-      nextStep3Btn.disabled = state.services.length === 0;
+  if(serviceOptions) {
+    serviceOptions.querySelectorAll('.service-item').forEach(item => {
+      item.addEventListener('click', () => {
+        item.classList.toggle('selected');
+        const nameEl = item.querySelector('span:nth-child(2)');
+        const name = nameEl ? nameEl.textContent : 'Serviciu';
+        const price = parseInt(item.dataset.price, 10) || 0;
+        if (item.classList.contains('selected')) {
+          state.services.push({ name, price });
+        } else {
+          state.services = state.services.filter(s => s.name !== name);
+        }
+        const total = state.services.reduce((sum, s) => sum + s.price, 0);
+        if(runningTotalEl) runningTotalEl.textContent = total + ' RON';
+        if(nextStep3Btn) nextStep3Btn.disabled = state.services.length === 0;
+      });
     });
-  });
+  }
 
   // --- step 3: date & time ---
   const dateInput = document.getElementById('booking-date');
   const timeOptions = document.getElementById('time-options');
-  dateInput.setAttribute('min', new Date().toISOString().split('T')[0]);
-  function checkStep3(){ document.querySelector('[data-next="4"]').disabled = !(state.date && state.time); }
-  dateInput.addEventListener('change', () => { state.date = dateInput.value; checkStep3(); });
-  timeOptions.querySelectorAll('.time-slot').forEach(btn => {
-    btn.addEventListener('click', () => {
-      timeOptions.querySelectorAll('.time-slot').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      state.time = btn.dataset.value;
-      checkStep3();
+  if(dateInput) {
+    dateInput.setAttribute('min', new Date().toISOString().split('T')[0]);
+  }
+  function checkStep3(){
+    const next4 = document.querySelector('[data-next="4"]');
+    if(next4) next4.disabled = !(state.date && state.time);
+  }
+  if(dateInput) {
+    dateInput.addEventListener('change', () => { state.date = dateInput.value; checkStep3(); });
+  }
+  if(timeOptions) {
+    timeOptions.querySelectorAll('.time-slot').forEach(btn => {
+      btn.addEventListener('click', () => {
+        timeOptions.querySelectorAll('.time-slot').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        state.time = btn.dataset.value;
+        checkStep3();
+      });
     });
-  });
+  }
 
   // --- step 4: summary + submit ---
   const summaryText = document.getElementById('summary-text');
   function refreshSummary(){
     let selectionStr = '';
     if (state.path === 'package' && state.package){
-      const tag = packageOptions.querySelector(`.choice-btn[data-value="${state.package}"] .price-tag`);
-      const priceStr = tag && tag.textContent ? ' · ' + tag.textContent : (state.package === 'Exterior' ? ' · 99–330 RON' : '');
+      const tag = packageOptions ? packageOptions.querySelector(`.choice-btn[data-value="${state.package}"] .price-tag`) : null;
+      const priceStr = tag && tag.textContent ? ' · ' + tag.textContent : '';
       selectionStr = `Pachet ${state.package}${priceStr}`;
     } else if (state.path === 'individual' && state.services.length){
       const total = state.services.reduce((sum, s) => sum + s.price, 0);
       selectionStr = `${state.services.length} servicii individuale · ${total} RON`;
     }
     const dirtinessText = state.path === 'individual' && state.dirtiness ? ` · Murdărie: ${state.dirtiness}` : '';
-    summaryText.textContent = `Clasă ${state.class || '-'} · ${selectionStr}${dirtinessText} · ${state.date || ''} ${state.time || ''}`;
+    if(summaryText) {
+      summaryText.textContent = `Clasă ${state.class || '-'} · ${selectionStr}${dirtinessText} · ${state.date || ''} ${state.time || ''}`;
+    }
   }
   document.querySelectorAll('[data-next="4"]').forEach(b => b.addEventListener('click', refreshSummary));
 
   const form = document.getElementById('booking-form');
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const name = document.getElementById('c-name').value.trim();
-    const phone = document.getElementById('c-phone').value.trim();
-    if (!name || !phone) return;
+  if(form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nameInput = document.getElementById('c-name');
+      const phoneInput = document.getElementById('c-phone');
+      const name = nameInput ? nameInput.value.trim() : '';
+      const phone = phoneInput ? phoneInput.value.trim() : '';
+      if (!name || !phone) return;
 
-    let selectionLine = '';
-    if (state.path === 'package' && state.package){
-      selectionLine = `Pachet: ${state.package}`;
-    } else if (state.path === 'individual' && state.services.length){
-      const total = state.services.reduce((sum, s) => sum + s.price, 0);
-      selectionLine = `Servicii: ${state.services.map(s => s.name).join(', ')} (Total: ${total} RON)`;
-    }
+      let selectionLine = '';
+      if (state.path === 'package' && state.package){
+        selectionLine = `Pachet: ${state.package}`;
+      } else if (state.path === 'individual' && state.services.length){
+        const total = state.services.reduce((sum, s) => sum + s.price, 0);
+        selectionLine = `Servicii: ${state.services.map(s => s.name).join(', ')} (Total: ${total} RON)`;
+      }
 
-    const dirtinessLine = state.path === 'individual' && state.dirtiness ? `Grad murdărie: ${state.dirtiness}` : '';
-    const msg = [
-      'Bună, aș dori o programare la DS Premium Detail.',
-      `Nume: ${name}`,
-      `Telefon: ${phone}`,
-      `Clasă mașină: ${state.class || '-'}`,
-      selectionLine || 'Selecție: —',
-      dirtinessLine || 'Grad murdărie: nu este specificat',
-      `Data: ${state.date || '-'}`,
-      `Ora: ${state.time || '-'}`,
-      'Vă mulțumesc!'
-    ].join('\n');
+      const dirtinessLine = state.path === 'individual' && state.dirtiness ? `Grad murdărie: ${state.dirtiness}` : '';
+      const fullMsg = [
+        `Nume: ${name}`,
+        `Telefon: ${phone}`,
+        `Clasă mașină: ${state.class || '-'}`,
+        selectionLine || 'Selecție: —',
+        dirtinessLine || 'Grad murdărie: nu este specificat',
+        `Data: ${state.date || '-'}`,
+        `Ora: ${state.time || '-'}`
+      ].filter(Boolean).join('\n');
 
-    const targetEmail = 'dspremium.detailing@gmail.com';
-    window.location.href = `mailto:${targetEmail}?subject=${encodeURIComponent('Programare nouă DS Premium Detail')}&body=${encodeURIComponent(msg)}`;
+      // Actualizăm câmpul ascuns pentru Formspree
+      const hiddenSummary = document.getElementById('hidden-summary');
+      if(hiddenSummary) hiddenSummary.value = fullMsg;
 
-    panels.forEach(p => p.classList.remove('active'));
-    const successPanel = document.querySelector('[data-panel="success"]');
-    successPanel.classList.add('active');
-    dots.forEach(d => d.classList.add('done'));
-    document.getElementById('booking-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Trimitem formularul prin fetch către Formspree fără redirectare în Gmail
+      try {
+        const formData = new FormData(form);
+        const response = await fetch(form.action, {
+          method: 'POST',
+          body: formData,
+          headers: { 'Accept': 'application/json' }
+        });
 
-    window.setTimeout(() => {
-      successPanel.classList.remove('active');
-      panels.forEach(p => p.classList.remove('active'));
-      document.querySelector('[data-panel="1"]').classList.add('active');
-      dots.forEach(d => {
-        d.classList.remove('active', 'done');
-        if (d.dataset.dot === '1') d.classList.add('active');
-      });
-      document.getElementById('booking-form').reset();
-      classOptions.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
-      packageOptions.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
-      serviceOptions.querySelectorAll('.service-item').forEach(item => item.classList.remove('selected'));
-      timeOptions.querySelectorAll('.time-slot').forEach(btn => btn.classList.remove('selected'));
-      state.class = null;
-      state.path = null;
-      state.package = null;
-      state.services = [];
-      state.dirtiness = null;
-      state.date = null;
-      state.time = null;
-      nextStep3Btn.disabled = true;
-      document.querySelector('[data-next="2"]').disabled = true;
-      document.querySelector('[data-next="4"]').disabled = true;
-      dirtinessField.style.display = 'none';
-      dirtinessLevel.value = '';
-      runningTotalEl.textContent = '0 RON';
-      summaryText.textContent = '—';
-      document.body.scrollTop = 0;
-      document.documentElement.scrollTop = 0;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 3500);
-  });
+        if (response.ok) {
+          panels.forEach(p => p.classList.remove('active'));
+          const successPanel = document.querySelector('[data-panel="success"]');
+          
+          // PERSONALIZARE PANOU SUCCES CU ATENȚIONARE PENTRU CLIENT
+          if(successPanel) {
+            successPanel.innerHTML = `
+              <div style="text-align: center; padding: 20px;">
+                <h3 style="color: #9c8323; margin-bottom: 15px;">Rezervare Trimisă cu Succes!</h3>
+                <p style="margin-bottom: 10px;">Datele programării au fost înregistrate. Veți primi în scurt timp un e-mail de confirmare.</p>
+                <div style="background: rgba(156, 131, 35, 0.1); padding: 15px; border-radius: 8px; margin-top: 20px; font-size: 0.95em;">
+                  <p style="margin: 0; color: #333;">Dacă nu primiți o confirmare în scurt timp, vă rugăm să ne scrieți direct pe 
+                  <a href="https://wa.me/40731353888" target="_blank" style="color: #25d366; font-weight: bold; text-decoration: underline;">WhatsApp</a> 
+                  sau pe e-mail pentru siguranță!</p>
+                </div>
+              </div>
+            `;
+            successPanel.classList.add('active');
+          }
+
+          dots.forEach(d => d.classList.add('done'));
+          const bookingEl = document.getElementById('booking-form');
+          if(bookingEl) bookingEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+          // Resetare prelungită la 10 secunde (sau poți lăsa clientul să citească în liniște)
+          window.setTimeout(() => {
+            window.location.reload(); // Cea mai simplă și sigură metodă de resetare curată a paginii
+          }, 10000);
+
+        } else {
+          // ATENȚIONARE ÎN CAZ DE EȘEC (Când serverul Formspree returnează eroare)
+          panels.forEach(p => p.classList.remove('active'));
+          const successPanel = document.querySelector('[data-panel="success"]');
+          if(successPanel) {
+            successPanel.innerHTML = `
+              <div style="text-align: center; padding: 20px;">
+                <h3 style="color: #d9534f; margin-bottom: 15px;">A apărut o problemă tehnică!</h3>
+                <p style="margin-bottom: 15px;">Rezervarea nu s-a putut trimite automat prin sistem.</p>
+                <p style="margin-bottom: 20px;">Vă rugăm să ne contactați direct pe <strong>WhatsApp</strong> la numărul <strong>0731 353 888</strong> pentru a vă programa manual.</p>
+                <a href="https://wa.me/40731353888" target="_blank" class="btn btn-gold" style="display: inline-block; text-decoration: none; padding: 10px 20px;">Contactează pe WhatsApp</a>
+              </div>
+            `;
+            successPanel.classList.add('active');
+          }
+        }
+
+      } catch (error) {
+        // ATENȚIONARE ÎN CAZ DE EROARE DE INTERNET / CONEXIUNE
+        panels.forEach(p => p.classList.remove('active'));
+        const successPanel = document.querySelector('[data-panel="success"]');
+        if(successPanel) {
+          successPanel.innerHTML = `
+            <div style="text-align: center; padding: 20px;">
+              <h3 style="color: #d9534f; margin-bottom: 15px;">Eroare de conexiune</h3>
+              <p style="margin-bottom: 15px;">Verificați conexiunea la internet sau contactați-ne direct.</p>
+              <a href="https://wa.me/40731353888" target="_blank" class="btn btn-gold" style="display: inline-block; text-decoration: none; padding: 10px 20px;">Trimite pe WhatsApp</a>
+            </div>
+          `;
+          successPanel.classList.add('active');
+        }
+      }
+    });
+  }
 
 });
